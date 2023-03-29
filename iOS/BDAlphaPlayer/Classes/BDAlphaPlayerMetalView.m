@@ -24,6 +24,7 @@
 @property (nonatomic, assign) CGRect renderSuperViewFrame;
 @property (nonatomic, strong) MTKView *mtkView;
 @property (nonatomic, strong) BDAlphaPlayerMetalRenderer *metalRenderer;
+@property (nonatomic, strong, nullable) AVPlayer *audioPlayer;
 
 @property (nonatomic, strong) BDAlphaPlayerAssetReaderOutput *output;
 
@@ -141,6 +142,16 @@
     [self renderOutput:output resourceModel:self.model completion:^{
         [weakSelf renderCompletion];
     }];
+
+    // 播放音频
+    if (output.audioItem) {
+        AVAudioSession *session = [AVAudioSession sharedInstance];
+        [session setCategory:AVAudioSessionCategoryPlayback error:nil];
+        [session setActive:YES error:nil];
+
+        self.audioPlayer = [[AVPlayer alloc] initWithPlayerItem:output.audioItem];
+        [self.audioPlayer play];
+    }
 }
 
 - (void)renderCompletion
@@ -174,6 +185,10 @@
     [self.mtkView removeFromSuperview];
     [self.mtkView releaseDrawables];
     [self.metalRenderer drainSampleBufferQueue];
+    if (self.audioPlayer) {
+        [self.audioPlayer pause];
+        [self.audioPlayer replaceCurrentItemWithPlayerItem:nil];
+    }
     self.mtkView = nil;
     self.hasDestroyed = YES;
 }
